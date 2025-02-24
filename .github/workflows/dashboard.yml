@@ -27,8 +27,8 @@ jobs:
           file: dashboard/Dockerfile
           push: true
           tags: |
-            ghcr.io/pluralkit/dashboard:${{ env.BRANCH_NAME }}
-            ghcr.io/pluralkit/dashboard:${{ github.sha }}
-            ghcr.io/pluralkit/dashboard:latest
-          cache-from: type=registry,ref=ghcr.io/pluralkit/dashboard:${{ env.BRANCH_NAME }}
+            ghcr.io/pridevrinc/dashboard:${{ env.BRANCH_NAME }}
+            ghcr.io/pridevrinc/dashboard:${{ github.sha }}
+            ghcr.io/pridevrinc/dashboard:latest
+          cache-from: type=registry,ref=ghcr.io/pridevrinc/dashboard:${{ env.BRANCH_NAME }}
           cache-to: type=inline

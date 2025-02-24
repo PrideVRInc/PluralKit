@@ -42,5 +42,5 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=ghcr.io/pluralkit/pluralkit:${{ env.BRANCH_NAME }}
+          cache-from: type=registry,ref=ghcr.io/pridevrinc/pluralkit:${{ env.BRANCH_NAME }}
           cache-to: type=inline

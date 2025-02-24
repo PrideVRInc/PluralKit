@@ -21,17 +21,17 @@ EOF
 
     echo "building $dockerfile"
 
-    $dockerfile | docker build -t ghcr.io/pluralkit/$bin:$tag -f $f .
+    $dockerfile | docker build -t ghcr.io/pridevrinc/$bin:$tag -f $f .
 
     rm $f
 
     if [ "$push" == "true" ]; then
-      docker push ghcr.io/pluralkit/$bin:$tag
-      docker image tag ghcr.io/pluralkit/$bin:$tag ghcr.io/pluralkit/$bin:$branch
-      docker push ghcr.io/pluralkit/$bin:$branch
+      docker push ghcr.io/pridevrinc/$bin:$tag
+      docker image tag ghcr.io/pridevrinc/$bin:$tag ghcr.io/pridevrinc/$bin:$branch
+      docker push ghcr.io/pridevrinc/$bin:$branch
       if [ "$branch" == "main" ]; then
-        docker image tag ghcr.io/pluralkit/$bin:$tag ghcr.io/pluralkit/$bin:latest
-        docker push ghcr.io/pluralkit/$bin:latest
+        docker image tag ghcr.io/pridevrinc/$bin:$tag ghcr.io/pridevrinc/$bin:latest
+        docker push ghcr.io/pridevrinc/$bin:latest
       fi
     fi
 }

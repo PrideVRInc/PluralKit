@@ -34,8 +34,8 @@ jobs:
           context: .
           file: ci/Dockerfile.rust
           push: false 
-          cache-from: type=registry,ref=ghcr.io/pluralkit/docker-cache:rust
-          cache-to: type=registry,ref=ghcr.io/pluralkit/docker-cache:rust,mode=max
+          cache-from: type=registry,ref=ghcr.io/pridevrinc/docker-cache:rust
+          cache-to: type=registry,ref=ghcr.io/pridevrinc/docker-cache:rust,mode=max
           outputs: .docker-bin
 
       # add more binaries here
