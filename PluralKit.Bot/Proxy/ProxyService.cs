@@ -233,8 +233,8 @@ public class ProxyService
         var tts = match.Member.Tts && senderPermissions.HasFlag(PermissionSet.SendTtsMessages);
 
         Message.MessageFlags flags = 0;
-        if (ctx.SuppressNotifications)
-            flags |= Message.MessageFlags.SuppressNotifications;
+        // if (ctx.SuppressNotifications)
+        flags |= Message.MessageFlags.SuppressNotifications;
         if (trigger.Flags.HasFlag(Message.MessageFlags.VoiceMessage))
             flags |= Message.MessageFlags.VoiceMessage;
 
