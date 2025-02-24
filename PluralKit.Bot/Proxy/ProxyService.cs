@@ -243,16 +243,20 @@ public class ProxyService
         // This is a workaround for the fact that Discord doesn't allow webhooks to use Nitro emojis
         // We replace any Nitro emojis with [emojiname](https://cdn.discordapp.com/emojis/emojiid.webp?size=48&name=emojiname)
 
-        
-        Regex emojiRegex = new(@"<(a)?:([a-zA-Z0-9_]+):(\d+)>", RegexOptions.Compiled);
-        content = emojiRegex.Replace(content, match =>
+        if (content != null)
         {
-            var animated = match.Groups[1].Value == "a";
-            var emojiName = match.Groups[2].Value;
-            var emojiId = match.Groups[3].Value;
-            var fileExt = animated ? "gif" : "webp";
-            return $"[:{emojiName}:](https://cdn.discordapp.com/emojis/{emojiId}.{fileExt}?size=48&name={emojiName})";
-        });
+            Regex emojiRegex = new(@"<(a)?:([a-zA-Z0-9_]+):(\d+)>", RegexOptions.Compiled);
+            content = emojiRegex.Replace(content, match =>
+            {
+                var animated = match.Groups[1].Value == "a";
+                var emojiName = match.Groups[2].Value;
+                var emojiId = match.Groups[3].Value;
+                var fileExt = animated ? "gif" : "webp";
+                return
+                    $"[:{emojiName}:](https://cdn.discordapp.com/emojis/{emojiId}.{fileExt}?size=48&name={emojiName})";
+            });
+        }
+
         #endregion
 
         try
