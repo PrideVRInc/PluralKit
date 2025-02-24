@@ -98,7 +98,7 @@ public class ProxyService
             return false;
 
         // this method throws, so no need to wrap it in an if statement
-        CheckProxyNameBoundsOrError(match.Member.ProxyName(ctx));
+        CheckProxyNameBoundsOrError(match.Member.ProxyName(ctx, message.Author.GlobalName));
 
         // Check if the sender account can mention everyone/here + embed links
         // we need to "mirror" these permissions when proxying to prevent exploits
@@ -241,7 +241,7 @@ public class ProxyService
         #region FakeNitroEmojiProcessor
 
         // This is a workaround for the fact that Discord doesn't allow webhooks to use Nitro emojis
-        // We replace any Nitro emojis with [emojiname](https://cdn.discordapp.com/emojis/emojiid.webp?size=48&name=emojiname)
+        // We replace any Nitro emojis with [emojiname](https://cdn.discordapp.com/emojis/emojiid.webp|gif?size=48&name=emojiname)
 
         if (content != null)
         {
@@ -267,7 +267,7 @@ public class ProxyService
                 ChannelId = rootChannel.Id,
                 ThreadId = threadId,
                 MessageId = trigger.Id,
-                Name = await FixSameName(messageChannel.Id, ctx, match.Member),
+                Name = await FixSameName(messageChannel.Id, ctx, match.Member, trigger.Author),
                 AvatarUrl = AvatarUtils.TryRewriteCdnUrl(match.Member.ProxyAvatar(ctx)),
                 Content = content,
                 Attachments = trigger.Attachments,
@@ -343,7 +343,7 @@ public class ProxyService
             ChannelId = rootChannel.Id,
             ThreadId = threadId,
             MessageId = originalMsg.Id,
-            Name = match.Member.ProxyName(ctx),
+            Name = match.Member.ProxyName(ctx, trigger.Author.GlobalName),
             AvatarUrl = AvatarUtils.TryRewriteCdnUrl(match.Member.ProxyAvatar(ctx)),
             Content = match.ProxyContent!,
             Attachments = originalMsg.Attachments!,
@@ -475,9 +475,9 @@ public class ProxyService
         };
     }
 
-    private async Task<string> FixSameName(ulong channelId, MessageContext ctx, ProxyMember member)
+    private async Task<string> FixSameName(ulong channelId, MessageContext ctx, ProxyMember member, User author)
     {
-        var proxyName = member.ProxyName(ctx);
+        var proxyName = member.ProxyName(ctx, author.GlobalName);
 
         var lastMessage = _lastMessage.GetLastMessage(channelId)?.Previous;
         if (lastMessage == null)

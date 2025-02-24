@@ -40,10 +40,10 @@ public class ProxyMember
             ("{name}", name)
         }).Trim();
 
-    public string ProxyName(MessageContext ctx)
+    public string ProxyName(MessageContext ctx, String authorName)
     {
         var memberName = ServerName ?? DisplayName ?? Name;
-        var tag = ctx.SystemGuildTag ?? ctx.SystemTag;
+        var tag = "(" + authorName + ")"; //ctx.SystemGuildTag ?? ctx.SystemTag;
         if (!ctx.TagEnabled) tag = null;
 
         return FormatTag(ctx.GuildNameFormat ?? ctx.NameFormat ?? DefaultFormat, tag, memberName);
