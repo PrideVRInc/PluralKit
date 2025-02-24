@@ -233,7 +233,7 @@ public class ProxyService
         var tts = match.Member.Tts && senderPermissions.HasFlag(PermissionSet.SendTtsMessages);
 
         Message.MessageFlags flags = 0;
-        // if (ctx.SuppressNotifications)
+        // if (ctx.SuppressNotifications) // we want all messages to be silent to not double ping
         flags |= Message.MessageFlags.SuppressNotifications;
         if (trigger.Flags.HasFlag(Message.MessageFlags.VoiceMessage))
             flags |= Message.MessageFlags.VoiceMessage;
