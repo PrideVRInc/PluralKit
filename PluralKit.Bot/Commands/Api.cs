@@ -114,6 +114,22 @@ public class Api
                 await ctx.Reply($"{Emojis.Error} Could not send token in DMs. Are your DMs closed?");
         }
     }
+    
+    public async Task SetOfficialToken(Context ctx)
+    {
+        ctx.CheckSystem();
+
+        if (!ctx.HasNext())
+            throw new PKSyntaxError("You must provide a token to set as the official API token. Get this by DMing `pk;token` to <@466378653216014359>");
+
+        var token = ctx.RemainderOrNull();
+        if (token.Length < 8)
+            throw new PKError("The token must be at least 8 characters long.");
+
+        await ctx.Repository.SetOfficialApiToken(ctx.System.Id, token);
+
+        await ctx.Reply($"{Emojis.Success} Official API token set.");
+    }
 
     public async Task SystemWebhook(Context ctx)
     {

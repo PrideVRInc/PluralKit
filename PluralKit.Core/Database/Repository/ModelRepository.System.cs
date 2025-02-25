@@ -148,4 +148,19 @@ public partial class ModelRepository
         await _db.ExecuteQuery(query);
         _logger.Information("Deleted {SystemId}", id);
     }
+    
+    #region PVROfficialSync
+    
+    public async Task<String?> GetOfficialApiToken(SystemId system)
+    {
+        var query = new Query("systems").Where("id", system).Select("official_api_token");
+        return await _db.QueryFirst<String?>(query);
+    }
+    
+    public async Task SetOfficialApiToken(SystemId system, String? token)
+    {
+        var query = new Query("systems").AsUpdate(new { official_api_token = token }).Where("id", system);
+        await _db.ExecuteQuery(query);
+    }
+    #endregion
 }
