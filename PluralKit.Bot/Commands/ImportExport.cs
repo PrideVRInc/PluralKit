@@ -163,7 +163,7 @@ public class ImportExport
                 } catch (JsonException) {
                     throw new PKError("Please check your official API token and try again.");
                 }
-                data.Merge(system);
+                
                 
                 data.Add("version", 2);
                 
