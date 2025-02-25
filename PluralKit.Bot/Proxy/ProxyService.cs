@@ -11,6 +11,8 @@ using Myriad.Rest.Exceptions;
 using Myriad.Rest.Types.Requests;
 using Myriad.Types;
 
+using Newtonsoft.Json.Linq;
+
 using PluralKit.Core;
 
 using Serilog;
@@ -252,8 +254,12 @@ public class ProxyService
                 var emojiName = match.Groups[2].Value;
                 var emojiId = match.Groups[3].Value;
                 var fileExt = animated ? "gif" : "webp";
+                var queryParameters = new List<string>();
+                queryParameters.Add("size=48");
+                queryParameters.Add($"name={emojiName}");
+                if (animated) queryParameters.Add("animated=true");
                 return
-                    $"[:{emojiName}:](https://cdn.discordapp.com/emojis/{emojiId}.{fileExt}?size=48&name={emojiName})";
+                    $"[:{emojiName}:](https://cdn.discordapp.com/emojis/{emojiId}.{fileExt}?{String.Join("&", queryParameters)})";
             });
         }
 
