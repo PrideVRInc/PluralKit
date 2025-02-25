@@ -44,18 +44,9 @@ public class Help
             {
                 new
                 (
-                    "How do I get started?",
+                    "How to sync with Official PluralKit",
                     String.Join("\n", new[]
                     {
-                        /** # Sync with official PluralKit
-This takes your system out of PluralKit and puts it into catra! If you already have a system with catra, it updates!
-## How To
-- dm `pk;token` to official pluralkit to get your token
-- if you have not already, create a system with `pk;s create` with @.catra#0234 
-- dm `pk;officialtoken <tokenhere>` to @.catra#0234 
-You only need to do that once! Then to update your system:
-- dm `pk;sync` to @.catra#0234 */
-                        "**How to sync with Official PluralKit**",
                         "This takes your system out of PluralKit and puts it into catra! If you already have a system with catra, it updates!",
                         "**How To**",
                         "- DM `pk;token` to official pluralkit to get your token",
