@@ -98,7 +98,7 @@ public class ProxyService
             return false;
 
         // this method throws, so no need to wrap it in an if statement
-        CheckProxyNameBoundsOrError(match.Member.ProxyName(ctx, message.Author.GlobalName));
+        CheckProxyNameBoundsOrError(match.Member.ProxyName(ctx, message.Member?.Nick ?? message.Author.GlobalName));
 
         // Check if the sender account can mention everyone/here + embed links
         // we need to "mirror" these permissions when proxying to prevent exploits
