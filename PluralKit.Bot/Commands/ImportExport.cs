@@ -146,7 +146,7 @@ public class ImportExport
         
                 // fetch the following endpoints from api.pluralkit.me
                 var configHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/system/@me/settings");
-                configHttpMessage.Headers.Add("Authorization", token);
+                configHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var configResponse = await _client.SendAsync(configHttpMessage);
                 if (!configResponse.IsSuccessStatusCode)
                     throw new PKError("Please check your official API token and try again.");
@@ -166,7 +166,7 @@ public class ImportExport
                 data.Add("accounts", new JArray());
                 
                 var membersHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/systems/@me/members");
-                membersHttpMessage.Headers.Add("Authorization", token);
+                membersHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var membersResponse = await _client.SendAsync(membersHttpMessage);
                 if (!membersResponse.IsSuccessStatusCode)
                     throw new PKError("Please check your official API token and try again.");
@@ -182,7 +182,7 @@ public class ImportExport
                 }
                 
                 var groupsHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/systems/@me/groups?with_members=true");
-                groupsHttpMessage.Headers.Add("Authorization", token);
+                groupsHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var groupsResponse = await _client.SendAsync(groupsHttpMessage);
                 if (!groupsResponse.IsSuccessStatusCode)
                     throw new PKError("Please check your official API token and try again.");
