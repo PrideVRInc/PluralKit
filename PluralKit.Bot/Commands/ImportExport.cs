@@ -199,6 +199,16 @@ public class ImportExport
                 
                 data.Add("switches", new JArray());
                 
+                // send the data to the user for debugging
+                var stream = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data, Formatting.Indented)));
+
+                var dm = await _dmCache.GetOrCreateDmChannel(ctx.Author.Id);
+                
+                await ctx.Rest.CreateMessage(dm,
+                    new MessageRequest { Content = "Here's the data I fetched from the API. If you see any issues, please contact a developer." },
+                    new[] { new MultipartFile("sync.json", stream, null, null, null) });
+                
+                
                 await Import(ctx, data);
             
             } catch (Exception e) {
