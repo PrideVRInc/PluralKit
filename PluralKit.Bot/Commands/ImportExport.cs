@@ -145,13 +145,22 @@ public class ImportExport
             try {
         
                 // fetch the following endpoints from api.pluralkit.me
+                
+                var data = new JObject();
+                
+                var systemStr = await _client.GetStringAsync("https://api.pluralkit.me/v2/systems/@me");
+                var system = JsonConvert.DeserializeObject<JObject>(systemStr);
+                if (system == null)
+                    throw new PKError("Please check your official API token and try again.");
+                data.Merge(system);
+                
+                data.Add("version", 2);
+                
                 var configHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/v2/systems/@me/settings");
                 configHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var configResponse = await _client.SendAsync(configHttpMessage);
                 if (!configResponse.IsSuccessStatusCode)
                     throw new PKError("Please check your official API token and try again.");
-
-                var data = new JObject();
                 
                 var configStr = await configResponse.Content.ReadAsStringAsync();
                 try {
