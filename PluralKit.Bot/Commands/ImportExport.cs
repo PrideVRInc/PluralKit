@@ -134,10 +134,10 @@ public class ImportExport
             throw new PKError("You do not have an official API token set. Set one with `pk;officialtoken <token>`. You can get this by DMing `pk;token` to <@466378653216014359>.");
         
         /**
-         * .config = /system/@me/settings
+         * .config = /v2/systems/@me/settings
 .accounts = [] // no api access
-.members = /systems/@me/members
-.groups = /systems/@me/groups?with_members=true
+.members = /v2/systems/@me/members
+.groups = /v2/systems/@me/groups?with_members=true
 .switches = [] // im not parsing that
          */
 
@@ -145,7 +145,7 @@ public class ImportExport
             try {
         
                 // fetch the following endpoints from api.pluralkit.me
-                var configHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/system/@me/settings");
+                var configHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/v2/systems/@me/settings");
                 configHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var configResponse = await _client.SendAsync(configHttpMessage);
                 if (!configResponse.IsSuccessStatusCode)
@@ -165,7 +165,7 @@ public class ImportExport
                 
                 data.Add("accounts", new JArray());
                 
-                var membersHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/systems/@me/members");
+                var membersHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/v2/systems/@me/members");
                 membersHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var membersResponse = await _client.SendAsync(membersHttpMessage);
                 if (!membersResponse.IsSuccessStatusCode)
@@ -181,7 +181,7 @@ public class ImportExport
                     throw new PKError("Please check your official API token and try again.");
                 }
                 
-                var groupsHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/systems/@me/groups?with_members=true");
+                var groupsHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/v2/systems/@me/groups?with_members=true");
                 groupsHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
                 var groupsResponse = await _client.SendAsync(groupsHttpMessage);
                 if (!groupsResponse.IsSuccessStatusCode)
