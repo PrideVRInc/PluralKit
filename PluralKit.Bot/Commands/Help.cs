@@ -47,13 +47,25 @@ public class Help
                     "How do I get started?",
                     String.Join("\n", new[]
                     {
-                        "To get started using PluralKit, try running the following commands (of course replacing the relevant names with your own):",
-                        "**1**. `{prefix}system new` - Create a system (if you haven't already)",
-                        "**2**. `{prefix}member add John` - Add a new member to your system",
-                        "**3**. `{prefix}member John proxy [text]` - Set up [square brackets] as proxy tags",
-                        "**4**. You're done! You can now type [a message in brackets] and it'll be proxied appropriately.",
-                        "**5**. Optionally, you may set an avatar from the URL of an image with `{prefix}member John avatar [link to image]`, or from a file by typing `{prefix}member John avatar` and sending the message with an attached image.",
-                        "\nSee [the Getting Started guide](https://pluralkit.me/start) for more information."
+                        /** # Sync with official PluralKit
+This takes your system out of PluralKit and puts it into catra! If you already have a system with catra, it updates!
+## How To
+- dm `pk;token` to official pluralkit to get your token
+- if you have not already, create a system with `pk;s create` with @.catra#0234 
+- dm `pk;officialtoken <tokenhere>` to @.catra#0234 
+You only need to do that once! Then to update your system:
+- dm `pk;sync` to @.catra#0234 */
+                        "**How to sync with Official PluralKit**",
+                        "This takes your system out of PluralKit and puts it into catra! If you already have a system with catra, it updates!",
+                        "**How To**",
+                        "- DM `pk;token` to official pluralkit to get your token",
+                        "- if you have not already, create a system with `pk;s create` with <@1215488387117748244>",
+                        "- DM `pk;officialtoken <tokenhere>` to <@1215488387117748244>",
+                        "You only need to do that once! Then to update your system:",
+                        "- DM `pk;sync` to <@1215488387117748244>",
+                        "",
+                        "If you have any issues or questions, please don't hesitate to ask!"
+                        
                     })
                 ),
             }
