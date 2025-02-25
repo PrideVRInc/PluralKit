@@ -148,10 +148,21 @@ public class ImportExport
                 
                 var data = new JObject();
                 
-                var systemStr = await _client.GetStringAsync("https://api.pluralkit.me/v2/systems/@me");
-                var system = JsonConvert.DeserializeObject<JObject>(systemStr);
-                if (system == null)
+                var systemHttpMessage = new HttpRequestMessage(HttpMethod.Get, "https://api.pluralkit.me/v2/systems/@me");
+                systemHttpMessage.Headers.TryAddWithoutValidation("Authorization", token);
+                var systemResponse = await _client.SendAsync(systemHttpMessage);
+                if (!systemResponse.IsSuccessStatusCode)
                     throw new PKError("Please check your official API token and try again.");
+                
+                var systemStr = await systemResponse.Content.ReadAsStringAsync();
+                try {
+                    var system = JsonConvert.DeserializeObject<JObject>(systemStr);
+                    if (system == null)
+                        throw new PKError("Please check your official API token and try again.");
+                    data.Merge(system);
+                } catch (JsonException) {
+                    throw new PKError("Please check your official API token and try again.");
+                }
                 data.Merge(system);
                 
                 data.Add("version", 2);
