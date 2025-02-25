@@ -72,7 +72,7 @@ public class Help
                         $"React with {Emojis.Error} on a proxied message to delete it (only if you sent it!)",
                         $"React with {Emojis.RedQuestion} on a proxied message to look up information about it (like who sent it)",
                         $"React with {Emojis.Bell} on a proxied message to \"ping\" the sender",
-                        "Type **`{prefix}invite`** to get a link to invite this bot to your own server!"
+                        // "Type **`{prefix}invite`** to get a link to invite this bot to your own server!"
                     })
                 ),
             }
