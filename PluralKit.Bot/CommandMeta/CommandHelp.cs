@@ -93,6 +93,7 @@ public partial class CommandTree
     public static Command TokenGet = new Command("token", "token", "Gets your system's API token");
     public static Command TokenRefresh = new Command("token refresh", "token refresh", "Resets your system's API token");
     public static Command OfficialToken = new Command("officialtoken", "officialtoken <token>", "Set your official PluralKit API token to sync your system with catra");
+    public static Command Sync = new Command("sync", "sync", "Syncs your PluralKit system with catra");
     public static Command Import = new Command("import", "import [fileurl]", "Imports system information from a data file");
     public static Command Export = new Command("export", "export", "Exports system information to a data file");
     public static Command Help = new Command("help", "help", "Shows help information about PluralKit");

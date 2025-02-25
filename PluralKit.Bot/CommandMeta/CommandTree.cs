@@ -35,6 +35,8 @@ public partial class CommandTree
                 return ctx.Execute<Api>(TokenGet, m => m.GetToken(ctx));
         if (ctx.Match("officialtoken"))
             return ctx.Execute<Api>(OfficialToken, m => m.SetOfficialToken(ctx));
+        if (ctx.Match("sync"))
+            return ctx.Execute<ImportExport>(Sync, m => m.Sync(ctx));
         if (ctx.Match("import"))
             return ctx.Execute<ImportExport>(Import, m => m.Import(ctx));
         if (ctx.Match("export"))
