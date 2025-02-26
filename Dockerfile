@@ -1,8 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
-RUN apt update && \
-    apt install -y curl
-
 WORKDIR /app
 
 # Restore/fetch dependencies excluding app code to make use of caching
@@ -21,7 +18,10 @@ RUN dotnet build -c Release -o bin
 
 # Build runtime stage (doesn't include SDK)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
-LABEL org.opencontainers.image.source = "https://github.com/PluralKit/PluralKit"
+LABEL org.opencontainers.image.source = "https://github.com/PrideVRInc/PluralKit"
+RUN apt update && \
+    apt install -y curl
+
 
 WORKDIR /app
 COPY --from=build /app ./
