@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
+RUN apt update && \
+    apt install -y curl
+
 WORKDIR /app
 
 # Restore/fetch dependencies excluding app code to make use of caching
