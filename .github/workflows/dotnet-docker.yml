@@ -8,6 +8,7 @@ on:
     - 'PluralKit.API/**'
     - 'PluralKit.Bot/**'
     - 'PluralKit.Core/**'
+    - 'Dockerfile'
 
 jobs:
   build:
