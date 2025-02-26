@@ -40,6 +40,7 @@ public class ErrorMessageService
 
     public async Task InteractionRespondWithErrorMessage(InteractionCreateEvent evt, string errorId)
     {
+        return; // TODO: funnel this into a designated error channel
         var now = SystemClock.Instance.GetCurrentInstant();
         if (!ShouldSendErrorMessage(null, now))
         {
@@ -80,6 +81,7 @@ public class ErrorMessageService
 
     public async Task SendErrorMessage(ulong channelId, string errorId)
     {
+        return; // TODO: funnel this into a designated error channel
         var now = SystemClock.Instance.GetCurrentInstant();
         if (!ShouldSendErrorMessage(channelId, now))
         {
