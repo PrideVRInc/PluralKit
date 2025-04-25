@@ -76,10 +76,19 @@ public class Init
             // Init the bot instance itself, register handlers and such to the client before beginning to connect
             bot.Init();
 
-            // Start the Discord shards themselves (handlers already set up)
-            logger.Information("Connecting to Discord");
-            await StartCluster(services);
+            // load runtime config from redis
+            await services.Resolve<RuntimeConfigService>().LoadConfig();
 
+            // Start HTTP server
+            if (config.HttpListenerAddr != null)
+                services.Resolve<HttpListenerService>().Start(config.HttpListenerAddr);
+
+            // Start the Discord shards themselves (handlers already set up)
+            if (!config.DisableGateway)
+            {
+                logger.Information("Connecting to Discord");
+                await StartCluster(services);
+            }
             logger.Information("Connected! All is good (probably).");
 
             // Lastly, we just... wait. Everything else is handled in the DiscordClient event loop

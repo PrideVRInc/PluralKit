@@ -10,7 +10,6 @@ use metrics::gauge;
 use num_format::{Locale, ToFormattedString};
 use reqwest::ClientBuilder;
 use sqlx::Executor;
-use tracing::error;
 
 use crate::AppCtx;
 
@@ -25,7 +24,13 @@ pub async fn update_prometheus(ctx: AppCtx) -> anyhow::Result<()> {
 
     gauge!("pluralkit_image_cleanup_queue_length").set(count.count as f64);
 
-    // todo: remaining shard session_start_limit
+    let gateway = ctx.discord.gateway().authed().await?.model().await?;
+
+    gauge!("pluralkit_gateway_sessions_remaining")
+        .set(gateway.session_start_limit.remaining as f64);
+    gauge!("pluralkit_gateway_sessions_reset_after")
+        .set(gateway.session_start_limit.reset_after as f64);
+
     Ok(())
 }
 
@@ -183,29 +188,24 @@ pub async fn update_stats_api(ctx: AppCtx) -> anyhow::Result<()> {
 
             let data = resp.json::<PrometheusResult>().await?;
 
-            let error_handler = || {
-                error!("missing data at {}", $q);
-            };
+            let error_handler = || anyhow::anyhow!("missing data at {}", $q);
 
             data.data
                 .result
                 .get(0)
-                .ok_or_else(error_handler)
-                .unwrap()
+                .ok_or_else(error_handler)?
                 .value
                 .clone()
                 .get(1)
-                .ok_or_else(error_handler)
-                .unwrap()
+                .ok_or_else(error_handler)?
                 .as_str()
-                .ok_or_else(error_handler)
-                .unwrap()
+                .ok_or_else(error_handler)?
                 .parse::<$t>()?
         }};
         ($t:ty, $q:expr, $wrap:expr) => {{
             let val = prom_instant_query!($t, $q);
             let val = (val * $wrap).round() / $wrap;
-            format!("{:.2}", val).parse::<f64>().unwrap()
+            format!("{:.2}", val).parse::<f64>()?
         }};
     }
 

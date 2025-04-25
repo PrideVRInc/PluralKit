@@ -1,7 +1,9 @@
+use anyhow::anyhow;
 use futures::StreamExt;
-use libpk::_config::ClusterSettings;
+use libpk::{_config::ClusterSettings, runtime_config::RuntimeConfig};
 use metrics::counter;
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 use tracing::{error, info, warn};
 use twilight_gateway::{
     create_iterator, ConfigBuilder, Event, EventTypeFlags, Message, Shard, ShardId,
@@ -12,7 +14,10 @@ use twilight_model::gateway::{
     Intents,
 };
 
-use crate::discord::identify_queue::{self, RedisQueue};
+use crate::{
+    discord::identify_queue::{self, RedisQueue},
+    RUNTIME_CONFIG_KEY_EVENT_TARGET,
+};
 
 use super::{cache::DiscordCache, shard_state::ShardStateManager};
 
@@ -44,6 +49,12 @@ pub fn create_shards(redis: fred::clients::RedisPool) -> anyhow::Result<Vec<Shar
 
     let (start_shard, end_shard): (u32, u32) = if cluster_settings.total_shards < 16 {
         warn!("we have less than 16 shards, assuming single gateway process");
+        if cluster_settings.node_id != 0 {
+            return Err(anyhow!(
+                "expecting to be node 0 in single-process mode, but we are node {}",
+                cluster_settings.node_id
+            ));
+        }
         (0, (cluster_settings.total_shards - 1).into())
     } else {
         (
@@ -78,34 +89,50 @@ pub fn create_shards(redis: fred::clients::RedisPool) -> anyhow::Result<Vec<Shar
 
 pub async fn runner(
     mut shard: Shard<RedisQueue>,
-    _tx: Sender<(ShardId, String)>,
+    tx: Sender<(ShardId, Event, String)>,
     shard_state: ShardStateManager,
     cache: Arc<DiscordCache>,
+    runtime_config: Arc<RuntimeConfig>,
 ) {
     // let _span = info_span!("shard_runner", shard_id = shard.id().number()).entered();
+    let shard_id = shard.id().number();
+
+    let our_user_id = libpk::config
+        .discord
+        .as_ref()
+        .expect("missing discord config")
+        .client_id;
+
     info!("waiting for events");
     while let Some(item) = shard.next().await {
         let raw_event = match item {
             Ok(evt) => match evt {
                 Message::Close(frame) => {
-                    info!(
-                        "shard {} closed: {}",
-                        shard.id().number(),
-                        if let Some(close) = frame {
-                            format!("{} ({})", close.code, close.reason)
-                        } else {
-                            "unknown".to_string()
-                        }
-                    );
-                    if let Err(error) = shard_state.socket_closed(shard.id().number()).await {
+                    let close_code = if let Some(close) = frame {
+                        close.code.to_string()
+                    } else {
+                        "unknown".to_string()
+                    };
+
+                    info!("shard {shard_id} closed: {close_code}");
+
+                    counter!(
+                        "pluralkit_gateway_shard_closed",
+                        "shard_id" => shard_id.to_string(),
+                        "close_code" => close_code,
+                    )
+                    .increment(1);
+
+                    if let Err(error) = shard_state.socket_closed(shard_id).await {
                         error!("failed to update shard state for socket closure: {error}");
                     }
+
                     continue;
                 }
                 Message::Text(text) => text,
             },
             Err(error) => {
-                tracing::warn!(?error, "error receiving event from shard {}", shard.id());
+                tracing::warn!(?error, "error receiving event from shard {shard_id}");
                 continue;
             }
         };
@@ -118,11 +145,7 @@ pub async fn runner(
                 continue;
             }
             Err(error) => {
-                error!(
-                    "shard {} failed to parse gateway event: {}",
-                    shard.id().number(),
-                    error
-                );
+                error!("shard {shard_id} failed to parse gateway event: {error}");
                 continue;
             }
         };
@@ -137,35 +160,48 @@ pub async fn runner(
         .increment(1);
         counter!(
             "pluralkit_gateway_events_shard",
-            "shard_id" => shard.id().number().to_string(),
+            "shard_id" => shard_id.to_string(),
         )
         .increment(1);
 
         // update shard state and discord cache
-        if let Err(error) = shard_state
-            .handle_event(shard.id().number(), event.clone())
-            .await
-        {
-            tracing::warn!(?error, "error updating redis state");
+        if let Err(error) = shard_state.handle_event(shard_id, event.clone()).await {
+            tracing::error!(?error, "error updating redis state");
         }
         // need to do heartbeat separately, to get the latency
         if let Event::GatewayHeartbeatAck = event
-            && let Err(error) = shard_state
-                .heartbeated(shard.id().number(), shard.latency())
-                .await
+            && let Err(error) = shard_state.heartbeated(shard_id, shard.latency()).await
         {
-            tracing::warn!(?error, "error updating redis state for latency");
+            tracing::error!(?error, "error updating redis state for latency");
         }
 
         if let Event::Ready(_) = event {
-            if !cache.2.read().await.contains(&shard.id().number()) {
-                cache.2.write().await.push(shard.id().number());
+            if !cache.2.read().await.contains(&shard_id) {
+                cache.2.write().await.push(shard_id);
             }
         }
-        cache.0.update(&event);
+        cache.update(&event).await;
 
         // okay, we've handled the event internally, let's send it to consumers
-        // tx.send((shard.id(), raw_event)).unwrap();
+
+        // some basic filtering here is useful
+        // we can't use if matching using the | operator, so anything matched does nothing
+        // and the default match skips the next block (continues to the next event)
+        match event {
+            Event::InteractionCreate(_) => {}
+            Event::MessageCreate(ref m) if m.author.id != our_user_id => {}
+            Event::MessageUpdate(ref m) if m.author.id != our_user_id && !m.author.bot => {}
+            Event::MessageDelete(_) => {}
+            Event::MessageDeleteBulk(_) => {}
+            Event::ReactionAdd(ref r) if r.user_id != our_user_id => {}
+            _ => {
+                continue;
+            }
+        }
+
+        if runtime_config.exists(RUNTIME_CONFIG_KEY_EVENT_TARGET).await {
+            tx.send((shard.id(), event, raw_event)).await.unwrap();
+        }
     }
 }
 

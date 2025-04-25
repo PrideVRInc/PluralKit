@@ -1,39 +1,74 @@
 #![feature(let_chains)]
 #![feature(if_let_guard)]
+#![feature(duration_constructors)]
 
 use chrono::Timelike;
+use discord::gateway::cluster_config;
+use event_awaiter::EventAwaiter;
 use fred::{clients::RedisPool, interfaces::*};
+use libpk::runtime_config::RuntimeConfig;
+use reqwest::{ClientBuilder, StatusCode};
 use signal_hook::{
     consts::{SIGINT, SIGTERM},
     iterator::Signals,
 };
-use std::{
-    sync::{mpsc::channel, Arc},
-    time::Duration,
-    vec::Vec,
-};
-use tokio::task::JoinSet;
-use tracing::{info, warn};
+use std::{sync::Arc, time::Duration, vec::Vec};
+use tokio::{sync::mpsc::channel, task::JoinSet};
+use tracing::{error, info, warn};
 use twilight_gateway::{MessageSender, ShardId};
 use twilight_model::gateway::payload::outgoing::UpdatePresence;
 
 mod cache_api;
 mod discord;
+mod event_awaiter;
 mod logger;
+
+const RUNTIME_CONFIG_KEY_EVENT_TARGET: &'static str = "event_target";
 
 libpk::main!("gateway");
 async fn real_main() -> anyhow::Result<()> {
-    let (shutdown_tx, shutdown_rx) = channel::<()>();
+    let (shutdown_tx, mut shutdown_rx) = channel::<()>(1);
     let shutdown_tx = Arc::new(shutdown_tx);
 
     let redis = libpk::db::init_redis().await?;
 
+    let runtime_config = Arc::new(
+        RuntimeConfig::new(
+            redis.clone(),
+            format!(
+                "{}:{}",
+                libpk::config.runtime_config_key.as_ref().unwrap(),
+                cluster_config().node_id
+            ),
+        )
+        .await?,
+    );
+
+    // hacky, but needed for selfhost for now
+    if let Some(target) = libpk::config
+        .discord
+        .as_ref()
+        .unwrap()
+        .gateway_target
+        .clone()
+    {
+        runtime_config
+            .set(RUNTIME_CONFIG_KEY_EVENT_TARGET.to_string(), target)
+            .await?;
+    }
+
     let shard_state = discord::shard_state::new(redis.clone());
     let cache = Arc::new(discord::cache::new());
+    let awaiter = Arc::new(EventAwaiter::new());
+    tokio::spawn({
+        let awaiter = awaiter.clone();
+        async move { awaiter.cleanup_loop().await }
+    });
 
     let shards = discord::gateway::create_shards(redis.clone())?;
 
-    let (event_tx, _event_rx) = channel();
+    // arbitrary
+    let (event_tx, mut event_rx) = channel(1000);
 
     let mut senders = Vec::new();
     let mut signal_senders = Vec::new();
@@ -47,8 +82,64 @@ async fn real_main() -> anyhow::Result<()> {
             event_tx.clone(),
             shard_state.clone(),
             cache.clone(),
+            runtime_config.clone(),
         )));
     }
+
+    set.spawn(tokio::spawn({
+        let runtime_config = runtime_config.clone();
+        let awaiter = awaiter.clone();
+
+        async move {
+            let client = Arc::new(
+                ClientBuilder::new()
+                    .connect_timeout(Duration::from_secs(1))
+                    .timeout(Duration::from_secs(1))
+                    .build()
+                    .expect("error making client"),
+            );
+
+            while let Some((shard_id, parsed_event, raw_event)) = event_rx.recv().await {
+                let target = if let Some(target) = awaiter.target_for_event(parsed_event).await {
+                    info!(target = ?target, "sending event to awaiter");
+                    Some(target)
+                } else if let Some(target) =
+                    runtime_config.get(RUNTIME_CONFIG_KEY_EVENT_TARGET).await
+                {
+                    Some(target)
+                } else {
+                    None
+                };
+
+                if let Some(target) = target {
+                    tokio::spawn({
+                        let client = client.clone();
+                        async move {
+                            match client
+                                .post(format!("{target}/{}", shard_id.number()))
+                                .body(raw_event)
+                                .send()
+                                .await
+                            {
+                                Ok(res) => {
+                                    if res.status() != StatusCode::OK {
+                                        error!(
+                                            status = ?res.status(),
+                                            target = ?target,
+                                            "got non-200 from bot while sending event",
+                                        );
+                                    }
+                                }
+                                Err(error) => {
+                                    error!(error = ?error, "failed to request event target");
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }));
 
     set.spawn(tokio::spawn(
         async move { scheduled_task(redis, senders).await },
@@ -57,7 +148,7 @@ async fn real_main() -> anyhow::Result<()> {
     // todo: probably don't do it this way
     let api_shutdown_tx = shutdown_tx.clone();
     set.spawn(tokio::spawn(async move {
-        match cache_api::run_server(cache).await {
+        match cache_api::run_server(cache, runtime_config, awaiter.clone()).await {
             Err(error) => {
                 tracing::error!(?error, "failed to serve cache api");
                 let _ = api_shutdown_tx.send(());
@@ -82,19 +173,19 @@ async fn real_main() -> anyhow::Result<()> {
                 let _ = sender.command(&presence);
             }
 
-            let _ = shutdown_tx.send(());
+            let _ = shutdown_tx.send(()).await;
             break;
         }
     }));
 
-    let _ = shutdown_rx.recv();
+    let _ = shutdown_rx.recv().await;
 
-    // sleep 500ms to allow everything to clean up properly
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    info!("gateway exiting, have a nice day!");
 
     set.abort_all();
 
-    info!("gateway exiting, have a nice day!");
+    // sleep 500ms to allow everything to clean up properly
+    tokio::time::sleep(Duration::from_millis(500)).await;
 
     Ok(())
 }

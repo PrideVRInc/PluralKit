@@ -24,6 +24,9 @@ pub struct DiscordConfig {
 
     #[serde(default = "_default_api_addr")]
     pub cache_api_addr: String,
+
+    #[serde(default)]
+    pub gateway_target: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -114,6 +117,9 @@ pub struct PKConfig {
     pub(crate) json_log: bool,
 
     #[serde(default)]
+    pub runtime_config_key: Option<String>,
+
+    #[serde(default)]
     pub sentry_url: Option<String>,
 }
 
@@ -132,9 +138,14 @@ impl PKConfig {
 lazy_static! {
     #[derive(Debug)]
     pub static ref CONFIG: Arc<PKConfig> = {
+        // hacks
         if let Ok(var) = std::env::var("NOMAD_ALLOC_INDEX")
             && std::env::var("pluralkit__discord__cluster__total_nodes").is_ok() {
             std::env::set_var("pluralkit__discord__cluster__node_id", var);
+        }
+        if let Ok(var) = std::env::var("STATEFULSET_NAME_FOR_INDEX")
+            && std::env::var("pluralkit__discord__cluster__total_nodes").is_ok() {
+            std::env::set_var("pluralkit__discord__cluster__node_id", var.split("-").last().unwrap());
         }
 
         Arc::new(Config::builder()

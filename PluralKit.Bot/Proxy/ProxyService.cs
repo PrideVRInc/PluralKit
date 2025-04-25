@@ -273,7 +273,7 @@ public class ProxyService
                 ChannelId = rootChannel.Id,
                 ThreadId = threadId,
                 MessageId = trigger.Id,
-                Name = await FixSameName(messageChannel.Id, ctx, match.Member, trigger.Author),
+                Name = await FixSameName(trigger.GuildId!.Value, messageChannel.Id, ctx, match.Member),
                 AvatarUrl = AvatarUtils.TryRewriteCdnUrl(match.Member.ProxyAvatar(ctx)),
                 Content = content,
                 Attachments = trigger.Attachments,
@@ -426,6 +426,10 @@ public class ProxyService
         if (hasContent)
         {
             var msg = repliedTo.Content;
+
+            // strip out overly excessive line breaks
+            msg = Regex.Replace(msg, @"(?:(?:([_\*]) \1)?\n){2,}", "\n");
+
             if (msg.Length > 100)
             {
                 msg = repliedTo.Content.Substring(0, 100);
@@ -481,11 +485,11 @@ public class ProxyService
         };
     }
 
-    private async Task<string> FixSameName(ulong channelId, MessageContext ctx, ProxyMember member, User author)
+    private async Task<string> FixSameName(ulong guildId, ulong channelId, MessageContext ctx, ProxyMember member)
     {
         var proxyName = member.ProxyName(ctx, author.GlobalName);
 
-        var lastMessage = _lastMessage.GetLastMessage(channelId)?.Previous;
+        var lastMessage = (await _lastMessage.GetLastMessage(guildId, channelId))?.Previous;
         if (lastMessage == null)
             // cache is out of date or channel is empty.
             return proxyName;
