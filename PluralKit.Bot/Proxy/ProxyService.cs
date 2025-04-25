@@ -273,7 +273,7 @@ public class ProxyService
                 ChannelId = rootChannel.Id,
                 ThreadId = threadId,
                 MessageId = trigger.Id,
-                Name = await FixSameName(trigger.GuildId!.Value, messageChannel.Id, ctx, match.Member),
+                Name = await FixSameName(trigger.GuildId!.Value, messageChannel.Id, ctx, match.Member, trigger.Author),
                 AvatarUrl = AvatarUtils.TryRewriteCdnUrl(match.Member.ProxyAvatar(ctx)),
                 Content = content,
                 Attachments = trigger.Attachments,
@@ -485,7 +485,7 @@ public class ProxyService
         };
     }
 
-    private async Task<string> FixSameName(ulong guildId, ulong channelId, MessageContext ctx, ProxyMember member)
+    private async Task<string> FixSameName(ulong guildId, ulong channelId, MessageContext ctx, ProxyMember member, User author)
     {
         var proxyName = member.ProxyName(ctx, author.GlobalName);
 
